@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Behörden-Briefkasten · Test Trigger</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 60px auto; padding: 0 20px; background: #f5f7fa; color: #1a2a3a; }
+    h1 { font-size: 18px; margin-bottom: 6px; }
+    p  { font-size: 13px; color: #7a8fa6; margin-bottom: 24px; }
+    label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #4a5a6a; }
+    input, textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid #c8d8e0;
+      border-radius: 8px; font-size: 13px; font-family: inherit;
+      background: #fff; margin-bottom: 14px; box-sizing: border-box;
+    }
+    button {
+      background: #3dd4ce; color: #fff; border: none; padding: 11px 24px;
+      border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+      width: 100%;
+    }
+    button:hover { background: #29bdb7; }
+    #status {
+      margin-top: 16px; padding: 12px 14px; border-radius: 8px;
+      font-size: 13px; display: none;
+    }
+    #status.ok  { background: #e6f8f7; color: #1d5e5b; border: 1px solid #c8eeec; }
+    #status.err { background: #fff0f0; color: #c94040; border: 1px solid #f4a4a4; }
+  </style>
+</head>
+<body>
+
+  <h1>🔔 Permission Dialog Trigger</h1>
+  <p>Sendet ein <code>DATA_REQUEST</code> Event an die Chrome Extension.</p>
+
+  <label>Extension ID</label>
+  <input id="ext-id" type="text" placeholder="idifkehjjoonchbajgfhehlojmijiplj" />
+
+  <label>Beschreibung</label>
+  <input id="description" type="text" value="Kontoauszüge des Jahres 2025 für Zwick, David" />
+
+  <label>Kategorie (= Ordnername im Pod)</label>
+  <input id="category" type="text" value="finance" />
+
+  <button onclick="trigger()">Permission Dialog öffnen</button>
+
+  <div id="status"></div>
+
+  <script>
+    // Pre-fill extension ID from URL param: test-trigger.html?extId=abc123
+    const params = new URLSearchParams(location.search);
+    if (params.get('extId')) {
+      document.getElementById('ext-id').value = params.get('extId');
+    }
+
+    function trigger() {
+      const extId       = document.getElementById('ext-id').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const category    = document.getElementById('category').value.trim();
+      const status      = document.getElementById('status');
+
+      if (!extId) {
+        showStatus('Bitte Extension ID eingeben.', true);
+        return;
+      }
+
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        showStatus('chrome.runtime nicht verfügbar. Seite muss über http:// geöffnet sein (nicht file://).', true);
+        return;
+      }
+
+      chrome.runtime.sendMessage(
+        extId,
+        {
+          type:        'DATA_REQUEST',
+          description,
+          category,
+          requestId:   'test-' + Date.now()
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            showStatus('Fehler: ' + chrome.runtime.lastError.message, true);
+            return;
+          }
+          showStatus('✓ ' + JSON.stringify(response), false);
+        }
+      );
+    }
+
+    function showStatus(msg, isError) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = isError ? 'err' : 'ok';
+      el.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>

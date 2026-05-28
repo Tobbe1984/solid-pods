@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datenzugriff</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <style>
+    body { min-height: 620px; }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-content">
+
+      <div class="logo">
+        <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M25 2 L46 13.75 L46 36.25 L25 48 L4 36.25 L4 13.75 Z" fill="#1B3A8A"/>
+          <circle cx="25" cy="17" r="5.5" fill="white"/>
+          <path d="M13 37 Q13 27 25 27 Q37 27 37 37" fill="white"/>
+          <rect x="21.5" y="29" width="7" height="6" rx="1.5" fill="#1B3A8A"/>
+          <path d="M22.5 29 L22.5 27 Q22.5 24 25 24 Q27.5 24 27.5 27 L27.5 29"
+                stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <circle cx="25" cy="32" r="1.2" fill="white"/>
+        </svg>
+      </div>
+
+      <div class="header-text">
+        <h1>Hallo, <strong id="display-name">–</strong></h1>
+        <p class="subtitle" id="pod-subtitle"></p>
+      </div>
+
+    </div>
+  </header>
+
+  <div class="wave-divider">
+    <svg viewBox="0 0 400 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,0 L400,0 L400,8 Q320,36 200,28 Q80,20 0,36 Z" fill="#F2F5F8"/>
+    </svg>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: REQUESTING (loading)
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="view-requesting" class="app-body hidden">
+    <div class="card">
+      <p class="permission-domain" id="req-domain">–</p>
+      <p class="permission-headline">möchte gerne auf folgende Daten zugreifen</p>
+      <p class="permission-description" id="req-description"></p>
+
+      <div class="spinner-row">
+        <div class="spinner"></div>
+        <span>Suche passende Daten in deinem Pod …</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" id="btn-deny-loading">Ablehnen</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: CONFIRM (files found)
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="view-confirm" class="app-body hidden">
+    <div class="card">
+      <p class="permission-domain" id="conf-domain">–</p>
+      <p class="permission-headline">möchte gerne auf folgende Daten zugreifen</p>
+      <p class="permission-description" id="conf-description"></p>
+
+      <div class="found-row">
+        <span class="found-checkmark">✓</span>
+        <span><span class="found-count" id="found-count">0</span> Datensätze gefunden</span>
+      </div>
+
+      <div class="file-list" id="file-list"></div>
+      <div class="more-files hidden" id="more-files"></div>
+
+      <div class="btn-row">
+        <button class="btn-ghost" id="btn-deny">Ablehnen</button>
+        <button class="btn-primary" id="btn-approve">Daten für 1 Woche freigeben</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW: ERROR
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="view-error" class="app-body hidden">
+    <div class="card">
+      <p class="error-msg" id="error-text">Ein Fehler ist aufgetreten.</p>
+      <div class="btn-row">
+        <button class="btn-ghost" id="btn-close-error">Schliessen</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script type="module" src="permission.js"></script>
+</body>
+</html>

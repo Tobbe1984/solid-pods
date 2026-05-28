@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Behörden-Briefkasten",
+  "version": "0.2.0",
+  "description": "Dezentraler Briefkasten: zeigt behördliche Dokumente aus deinem Solid Pod und meldet neue Zustellungen.",
+
+  "permissions": [
+    "identity",
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://*.chromiumapp.org/*",
+    "https://*/*",
+    "http://localhost/*"
+  ],
+
+  "externally_connectable": {
+    "matches": [
+      "http://localhost/*",
+      "https://*/*"
+    ]
+  },
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Behörden-Briefkasten"
+  },
+
+  "icons": {
+    "128": "icon128.png"
+  }
+}
