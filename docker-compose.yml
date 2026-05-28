@@ -1,0 +1,15 @@
+services:
+  solid-server-a:
+    image: solidproject/community-server:7
+    container_name: pod-provider
+    ports:
+      - "3000:3000"
+    # Eigene Config einhaengen und laden: persistente Files + allow-all (kein Auth)
+    volumes:
+      - ./demo-unsafe.json:/config/demo-unsafe.json:ro
+      - ./data:/data
+    command: >
+      -c /config/demo-unsafe.json
+      -f /data
+      --baseUrl http://localhost:3000/
+    restart: unless-stopped
