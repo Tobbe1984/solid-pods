@@ -1,0 +1,15 @@
+{
+  "name": "Postfinance",
+  "accounts": [
+    {
+      "iban": "CH93 0076 2011 6238 5295 7",
+      "name": "Privatkonto",
+      "amount": "5000"
+    },
+    {
+      "iban": "CH14 0900 0000 1234 5678 9",
+      "name": "Sparkonto",
+      "amount": "20000"
+    }
+  ]
+}

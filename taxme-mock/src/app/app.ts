@@ -1,32 +1,63 @@
-import { Component, signal } from '@angular/core';
-import {getDefaultSession, login, Session} from '@inrupt/solid-client-authn-browser';
-import { environment } from '../../environment';
+import {Component, signal, WritableSignal} from '@angular/core';
+import {CommonModule} from '@angular/common';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
+  imports: [CommonModule],
 })
 export class App {
-  protected readonly title = signal('solid-angular');
 
-// These values come from Step 2 (or from your account page).
-// In production, load these from environment variables.
- // URL of the protected resource to fetch (optional)
+  jsonData: WritableSignal<any> = signal(null);
+  errorMessage = '';
 
-  async getSolidData(): Promise<void> {
-    const CLIENT_ID = environment.SOLID_CLIENT_ID;
-    const CLIENT_SECRET = environment.SOLID_CLIENT_SECRET;
-    const OIDC_ISSUER = environment.SOLID_OIDC_ISSUER; // Your authorization server URL (sometimes called IdP, sometimes same as your Solid server URL)
-    const RESOURCE_URL = environment.SOLID_RESOURCE_URL;
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-    // Start the Login Process if not already logged in.
-    if (!getDefaultSession().info.isLoggedIn) {
-      await login({
-        oidcIssuer: OIDC_ISSUER,
-        redirectUrl: new URL(window.location.href).toString(),
-        clientName: "My application"
-      });
+    if (!input.files || input.files.length === 0) {
+      return;
     }
+
+    const file = input.files[0];
+
+    this.loadAccountData(file);
   }
+
+  private loadAccountData(file: File) {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const text = reader.result as string;
+        this.jsonData.set(JSON.parse(text));
+        this.errorMessage = '';
+      } catch (error) {
+        this.errorMessage = 'Invalid JSON format.';
+        this.jsonData.set(null);
+      }
+    };
+
+    reader.readAsText(file);
+  }
+
+  getFileFromSolidPod() {
+    // @ts-ignore
+    chrome.runtime.sendMessage('fdeoabjeeiedpmeboicidbedplbdkpbn',
+      {
+        type:        'DATA_REQUEST',
+        description: 'Kontoauszüge des Jahres 2025 für Zwick, David',
+        category:    'finance',
+        requestId:   'test-001'
+      },
+      (response: any) => console.log(response)
+    );
+  }
+
+  get accounts(): [any] {
+    // @ts-ignore
+    return this.jsonData()?.accounts
+  }
+
+
 }
