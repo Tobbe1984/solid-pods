@@ -88,7 +88,8 @@ npx @solid/community-server -p 3000 -c @css:config/file.json
 
 ### 2. Create a Solid Pod for the test user
 
-Open `http://localhost:3000/.account/` in your browser and create an account for e.g. `alice`.
+1. Open `http://localhost:3000/.account/` in your browser and create an account for e.g. `alice`.
+2. Create a pod for e.g. `alice`
 
 ### 3. Log in via the extension
 

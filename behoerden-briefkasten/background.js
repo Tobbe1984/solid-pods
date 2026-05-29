@@ -112,12 +112,14 @@ async function handleDataRequest(msg, sender, requestId) {
   } catch (_) { /* keep fallback domain */ }
 
   const request = {
-    id:          requestId,
+    id:             requestId,
     domain,
-    description: description || '',
-    category:    category || 'inbox',
-    origin:      sender.origin || sender.url || '',
-    timestamp:   Date.now()
+    description:    description || '',
+    category:       category || 'inbox',
+    origin:         sender.origin || sender.url || '',
+    timestamp:      Date.now(),
+    requesterWebId: msg.requesterWebId || null,
+    accessMode:     msg.accessMode || 'Read'
   };
 
   await chrome.storage.local.set({ [PENDING_REQUEST_KEY]: request });
@@ -172,7 +174,7 @@ function sendNotification(message) {
   const sender = (message.sender || 'Eine Behörde').replace(/^https?:\/\//, '');
   chrome.notifications.create(message.id, {
     type:     'basic',
-    iconUrl:  'icon128.png',
+    iconUrl:  'Icon.png',
     title:    'Neues Behörden-Dokument',
     message:  `Zustellung von ${sender}`,
     priority: 2

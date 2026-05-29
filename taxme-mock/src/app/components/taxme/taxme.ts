@@ -40,7 +40,7 @@ export class Taxme {
   getFileFromSolidPod() {
     const requestId = `taxme-${Date.now()}`;
     this.solidPodExtensionService
-      .requestData('Grant access to tax data', 'TAXME', requestId)
+      .requestData('Grant access to tax data', 'TAXME', requestId, environment.SOLID_CLIENT_ID || undefined)
       .subscribe((response) => {
         console.log('Access request response:', response);
       });
