@@ -57,6 +57,22 @@ behoerden-briefkasten/
 
 ---
 
+## TaxMe Mock
+
+The `taxme-mock/` directory contains an Angular app that simulates a government tax portal interacting with a Solid Pod.
+
+### Start the TaxMe mock
+
+```bash
+cd taxme-mock
+npm install
+npm start
+```
+
+The app will be served at `http://localhost:4200` by default (Angular's `ng serve` default port).
+
+---
+
 ## Prerequisites
 
 - **Google Chrome** or **Microsoft Edge** (Chromium-based)
