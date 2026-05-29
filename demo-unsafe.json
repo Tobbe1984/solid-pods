@@ -16,7 +16,7 @@
     "css:config/identity/ownership/token.json",
     "css:config/identity/pod/static.json",
     "css:config/ldp/authentication/dpop-bearer.json",
-    "css:config/ldp/authorization/allow-all.json",
+    "css:config/ldp/authorization/webacl.json",
     "css:config/ldp/handler/default.json",
     "css:config/ldp/metadata-parser/default.json",
     "css:config/ldp/metadata-writer/default.json",
@@ -35,7 +35,7 @@
   ],
   "@graph": [
     {
-      "comment": "Hackathon-Demo: speichert auf Platte (file), DEAKTIVIERT WAC via allow-all. Jeder Pod ohne Auth les-/schreibbar. NICHT fuer Produktion."
+      "comment": "Hackathon-Demo: speichert auf Platte (file), WAC aktiv (webacl). Auth via setup-auth.sh konfigurieren."
     }
   ]
 }

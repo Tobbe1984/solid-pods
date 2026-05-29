@@ -45,10 +45,12 @@ export class App {
     // @ts-ignore
     chrome.runtime.sendMessage('fdeoabjeeiedpmeboicidbedplbdkpbn',
       {
-        type:        'DATA_REQUEST',
-        description: 'Kontoauszüge des Jahres 2025 für Zwick, David',
-        category:    'finance',
-        requestId:   'test-001'
+        type:            'DATA_REQUEST',
+        description:     'Kontoauszüge des Jahres 2025 für Zwick, David',
+        category:        'finance',
+        requestId:       'test-001',
+        requesterWebId:  'http://localhost:3000/taxme/profile/card#me',
+        accessMode:      'Read'
       },
       (response: any) => console.log(response)
     );
