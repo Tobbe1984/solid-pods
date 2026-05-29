@@ -200,3 +200,153 @@ export async function uploadFile(folderUrl, file) {
   if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`);
   return fileUrl;
 }
+
+// ── Access Control (WAC) ──────────────────────────────────────────────────────
+
+const ACL_GRANTS_KEY = 'acl_grants';
+
+/**
+ * Grants a requester access to a Pod container via WAC ACL.
+ * The container is derived from request.category. Alice (session owner) always
+ * keeps full control. All previously granted entries are preserved.
+ *
+ * @param {object} request - The pending DATA_REQUEST object from storage.
+ *   Must contain: requesterWebId, category, accessMode ('Read' | 'Read, Write')
+ * @returns {Promise<string>} - The containerUrl that was granted access to
+ */
+export async function grantAccess(request) {
+  const session = await getSession();
+  if (!session) throw new Error('Nicht eingeloggt');
+  if (!request.requesterWebId) throw new Error('requesterWebId fehlt in der Anfrage');
+
+  const podBase      = podBaseFromWebId(session.webId);
+  const containerUrl = `${podBase}/${request.category.toLowerCase()}/`;
+
+  // Ensure the container exists
+  await podFetch(containerUrl, {
+    method:  'PUT',
+    headers: {
+      'Content-Type': 'text/turtle',
+      'Link':         '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'
+    },
+    body: ''
+  });
+
+  // Load grants stored by this extension (user-approved)
+  const store     = await chrome.storage.local.get(ACL_GRANTS_KEY);
+  const allGrants = store[ACL_GRANTS_KEY] || {};
+  const grants    = allGrants[containerUrl] || [];
+
+  // Upsert the new grant (replace existing entry for same WebID)
+  const idx = grants.findIndex(g => g.webId === request.requesterWebId);
+  const newGrant = {
+    webId:     request.requesterWebId,
+    mode:      request.accessMode || 'Read',
+    label:     request.domain,
+    grantedAt: Date.now(),
+    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+  };
+  if (idx >= 0) {
+    grants[idx] = newGrant;
+  } else {
+    grants.push(newGrant);
+  }
+
+  // Merge with any grants already on the pod ACL (e.g. write-access set by setup-auth.sh)
+  const existingGrants = await fetchExistingAclGrants(containerUrl + '.acl');
+  for (const eg of existingGrants) {
+    if (!grants.some(g => g.webId === eg.webId)) {
+      grants.push(eg);
+    }
+  }
+
+  // Build and PUT the ACL
+  const aclTurtle = buildAclTurtle(session.webId, grants);
+  const aclRes    = await podFetch(containerUrl + '.acl', {
+    method:  'PUT',
+    headers: { 'Content-Type': 'text/turtle' },
+    body:    aclTurtle
+  });
+  if (!aclRes.ok) throw new Error(`ACL setzen fehlgeschlagen: ${aclRes.status}`);
+
+  // Persist updated grants
+  allGrants[containerUrl] = grants;
+  await chrome.storage.local.set({ [ACL_GRANTS_KEY]: allGrants });
+
+  return containerUrl;
+}
+
+/**
+ * Fetches an existing ACL and extracts non-owner agent grants so they can be
+ * preserved when rewriting the ACL.
+ */
+async function fetchExistingAclGrants(aclUrl) {
+  try {
+    const res = await podFetch(aclUrl, { headers: { Accept: 'text/turtle' } });
+    if (!res.ok) return [];
+    const turtle = await res.text();
+
+    const grants = [];
+    // Split on lines that start a new <#block>
+    const blocks = turtle.split(/(?=^<#)/m);
+
+    for (const block of blocks) {
+      if (!block.includes('acl:Authorization')) continue;
+
+      const agentM = block.match(/acl:agent\s+<([^>]+)>/);
+      if (!agentM) continue;
+      const webId = agentM[1];
+
+      // Skip owner block (has acl:Control)
+      if (block.includes('acl:Control')) continue;
+
+      // Extract all modes from the acl:mode line(s), e.g. "acl:Read, acl:Write"
+      const modeLineM = block.match(/acl:mode\s+((?:acl:\w+[,\s]*)+)/);
+      const modeStr = modeLineM
+        ? [...modeLineM[1].matchAll(/acl:(\w+)/g)].map(m => m[1]).join(', ')
+        : 'Read';
+
+      grants.push({ webId, mode: modeStr, label: webId, grantedAt: 0, expiresAt: 0 });
+    }
+    return grants;
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Builds a WAC ACL Turtle document for a container.
+ * The owner always receives Read/Write/Control; additional grants are appended.
+ */
+function buildAclTurtle(ownerWebId, grants) {
+  const lines = ['@prefix acl: <http://www.w3.org/ns/auth/acl#> .', ''];
+
+  lines.push(
+    '<#owner>',
+    '    a acl:Authorization ;',
+    `    acl:agent <${ownerWebId}> ;`,
+    '    acl:accessTo <./> ;',
+    '    acl:default <./> ;',
+    '    acl:mode acl:Read, acl:Write, acl:Control .',
+    ''
+  );
+
+  grants.forEach((grant, i) => {
+    // mode may be 'Read' or 'Read, Write' — prefix each token with acl: if not already
+    const modeStr = grant.mode
+      .split(',')
+      .map(m => { const t = m.trim(); return t.startsWith('acl:') ? t : `acl:${t}`; })
+      .join(', ');
+    lines.push(
+      `<#grant-${i}>`,
+      '    a acl:Authorization ;',
+      `    acl:agent <${grant.webId}> ;`,
+      '    acl:accessTo <./> ;',
+      '    acl:default <./> ;',
+      `    acl:mode ${modeStr} .`,
+      ''
+    );
+  });
+
+  return lines.join('\n');
+}

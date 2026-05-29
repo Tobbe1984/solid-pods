@@ -8,7 +8,7 @@
 // before this window is opened.
 
 import { getSession } from '../auth.js';
-import { listByCategory, listFolder, podBaseFromWebId } from '../pod.js';
+import { listByCategory, listFolder, podBaseFromWebId, grantAccess } from '../pod.js';
 
 const PENDING_REQUEST_KEY = 'pending_data_request';
 const APPROVAL_KEY        = 'approval_result';
@@ -140,12 +140,24 @@ async function searchPodFiles(session, request) {
 // ── Approval / Denial ─────────────────────────────────────────────────────────
 
 async function approve(request) {
+  // Disable buttons and show spinner while ACL is being written
+  $('btn-approve').disabled = true;
+  $('btn-deny').disabled    = true;
+  $('btn-approve').textContent = 'Wird freigegeben …';
+
+  try {
+    await grantAccess(request);
+  } catch (e) {
+    showError(`Freigabe fehlgeschlagen: ${e.message}`);
+    return;
+  }
+
   const result = {
     requestId: request.id,
     domain:    request.domain,
     category:  request.category,
     approved:  true,
-    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
   };
   await chrome.storage.local.set({ [APPROVAL_KEY]: result });
   await chrome.storage.local.remove(PENDING_REQUEST_KEY);

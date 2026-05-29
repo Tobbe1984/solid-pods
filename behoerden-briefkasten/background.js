@@ -130,12 +130,14 @@ async function handleDataRequest(msg, sender, requestId, url) {
   } catch (_) { /* keep fallback domain */ }
 
   const request = {
-    id:          requestId,
+    id:             requestId,
     domain,
-    description: description || '',
-    category:    category || 'inbox',
-    origin:      sender.origin || sender.url || '',
-    timestamp:   Date.now()
+    description:    description || '',
+    category:       category || 'inbox',
+    origin:         sender.origin || sender.url || '',
+    timestamp:      Date.now(),
+    requesterWebId: msg.requesterWebId || null,
+    accessMode:     msg.accessMode || 'Read'
   };
 
   await chrome.storage.local.set({ [PENDING_REQUEST_KEY]: request });
