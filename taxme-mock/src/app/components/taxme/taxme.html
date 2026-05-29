@@ -1,0 +1,53 @@
+<div class="background">
+  <div class="content-box">
+    <div class="content">
+      <div class="container">
+        <h2 class="title">eSteuerauszüge</h2>
+        <span class="text">Sie können Ihre elektronischen Steuerauszüge im pdf-Format direkt aus Ihrer Computerablage hochladen und in Ihre Steuererklärung übertragen. Die Steuerverwaltung kann Ihre hochgeladenen Daten erst einsehen, wenn Sie die Steuererklärung freigegeben haben.</span>
+        <input
+          type="file"
+          multiple
+          accept=".json,application/json"
+          (change)="onFileSelected($event)"
+        />
+        <button>eSteuerauszug hochladen</button>
+      </div>
+
+      <div class="container">
+        <h2 class="title">Solid Steuerauszug</h2>
+        <span class="text">Steuerrelevante Daten werden in einem Solid Pod gespeichert und verbleiben unter der Kontrolle der steuerpflichtigen Person oder Organisation. Für die Übermittlung an die Steuerbehörde werden gezielt Zugriffsrechte vergeben, sodass nur die benötigten Informationen sicher und datenschutzkonform eingesehen oder abgerufen werden können. Nach Abschluss kann der Zugriff jederzeit angepasst oder entzogen werden.</span>
+        <button (click)="getFileFromSolidPod()">Get Data from solid pod</button>
+      </div>
+
+      @if (jsonData()) {
+        <div class="container">
+          <h1 class="title">Bankkonten</h1>
+          <table class="account-table" border="1" cellpadding="8" cellspacing="0">
+            <thead>
+            <tr>
+              <th>Konto Bezeichnung</th>
+              <th>IBAN</th>
+              <th>Stand</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (file of jsonData(); track $index) {
+                <tr class="section-title">
+                  <td colspan="3">{{ file.name }}</td>
+                </tr>
+                @for (account of accounts(file); track account) {
+                  <tr>
+                    <td>{{ account.name }}</td>
+                    <td>{{ account.iban }}</td>
+                    <td class="amount">CHF {{ account.amount | number : '1.2-2'  }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+
+        </div>
+      }
+    </div>
+  </div>
+</div>

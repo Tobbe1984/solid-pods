@@ -1,0 +1,33 @@
+.background {
+  background-image: url("/assets/img/bekb-mock.png");
+  min-height: 100%;
+  background-repeat: no-repeat;
+  background-size: 1500px;
+  background-position-x: center;
+}
+
+.content-box {
+  position: relative;
+  top: 288px;
+  margin-left: auto;
+  padding-left: 400px;
+  margin-right: auto;
+  width: 200px;
+  height: 200px;
+  .button {
+    font-size: 1rem;
+    font-variation-settings: "wdth" 39;
+    font-weight: 300;
+    outline: none;
+    border: 0;
+    background-color: #e4ead6;
+    border-radius: 20px;
+    color: #545b68;
+    cursor: pointer;
+    height: 2.5rem;
+    line-height: 2.5rem;
+    margin-bottom: 2.25em;
+    padding: 0 3em;
+    white-space: nowrap;
+  }
+}

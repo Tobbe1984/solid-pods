@@ -1,0 +1,69 @@
+html, body {
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 16px;
+  color: #161616;
+}
+
+.background {
+  background-image: url("/assets/img/taxme-mock.png");
+  min-height: 100%;
+  background-repeat: no-repeat;
+  background-size: 970px;
+  background-position-x: center;
+}
+
+.content-box {
+  position: relative;
+  top: 120px;
+  margin-left: auto;
+  padding-left: 200px;
+  margin-right: auto;
+  width: 700px;
+  height: 200px;
+  .container {
+    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    row-gap: 12px;
+  }
+  .title {
+    margin: 0;
+    padding: 0;
+    line-height: 1.1em;
+    font-weight: normal;
+    color: #323232;
+    font-size: 19.36px;
+  }
+  .text {
+    font-size: 12.1px;
+  }
+
+  .account-table {
+    border-collapse: collapse;
+    width: 100%;
+    .section-title {
+      background: #f0f0f0;
+      font-weight: bold;
+      text-align: left;
+      font-size: 1.1em;
+    }
+    th {
+      text-align: left;
+    }
+    .amount {
+      text-align: right;
+    }
+  }
+
+  button {
+    align-self:flex-start;
+    background-color: white;
+    border-width: 1px;
+    border-radius: 2px;
+    border-style: solid;
+    border-color: #566a73 #37444a #37444a #566a73;
+    padding: 2px 17px 2px 17px;
+    font-weight: bold;
+    color: #323232;
+  }
+}
