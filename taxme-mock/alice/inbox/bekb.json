@@ -1,0 +1,15 @@
+{
+  "name": "BEKB",
+  "accounts": [
+    {
+      "iban": "CH21 0023 0230 0001 2345 6",
+      "name": "Privatkonto",
+      "amount": "8000"
+    },
+    {
+      "iban": "CH56 0483 5012 3456 7800 2",
+      "name": "Sparkonto",
+      "amount": "26820"
+    }
+  ]
+}

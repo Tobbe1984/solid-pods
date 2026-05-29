@@ -1,0 +1,15 @@
+@prefix acl: <http://www.w3.org/ns/auth/acl#> .
+
+<#owner>
+    a acl:Authorization ;
+    acl:agent <http://localhost:3000/alice/profile/card#me> ;
+    acl:accessTo <./> ;
+    acl:default <./> ;
+    acl:mode acl:Read, acl:Write, acl:Control .
+
+<#bank-write>
+    a acl:Authorization ;
+    acl:agent <http://localhost:3000/bank/profile/card#me> ;
+    acl:accessTo <./> ;
+    acl:default <./> ;
+    acl:mode acl:Read, acl:Write .

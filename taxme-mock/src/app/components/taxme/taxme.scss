@@ -56,7 +56,7 @@ html, body {
   }
 
   button {
-    align-self:flex-start;
+    align-self: flex-start;
     background-color: white;
     border-width: 1px;
     border-radius: 2px;
@@ -65,5 +65,54 @@ html, body {
     padding: 2px 17px 2px 17px;
     font-weight: bold;
     color: #323232;
+    cursor: pointer;
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    border-color: #aaa;
+    font-weight: normal;
+    font-size: 12px;
+    padding: 2px 10px;
+  }
+
+  .session-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    .session-webid {
+      font-size: 12px;
+      color: #555;
+      font-family: monospace;
+    }
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.1px;
+    padding: 6px 0;
+    &.status-pending { color: #555; }
+    &.status-denied  { color: #c0392b; }
+    &.status-error   { color: #c0392b; }
+  }
+
+  .spinner-small {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ccc;
+    border-top-color: #555;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 }

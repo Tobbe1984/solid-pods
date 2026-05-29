@@ -1,9 +1,25 @@
 <div class="background">
   <div class="content-box">
     <div class="content">
+
+      <!-- ── Login Section ─────────────────────────────────────────── -->
+      <div class="container">
+        <h2 class="title">Solid Pod Verbindung</h2>
+        @if (isLoggedIn()) {
+          <div class="session-info">
+            <span class="session-webid">{{ webId() }}</span>
+            <button class="btn-secondary" (click)="logout()">Ausloggen</button>
+          </div>
+        } @else {
+          <span class="text">Loggen Sie sich mit Ihrem Solid Pod ein, um Steuerdaten sicher zu übermitteln.</span>
+          <button (click)="login()">Mit Solid Pod einloggen</button>
+        }
+      </div>
+
+      <!-- ── Manual Upload ─────────────────────────────────────────── -->
       <div class="container">
         <h2 class="title">eSteuerauszüge</h2>
-        <span class="text">Sie können Ihre elektronischen Steuerauszüge im pdf-Format direkt aus Ihrer Computerablage hochladen und in Ihre Steuererklärung übertragen. Die Steuerverwaltung kann Ihre hochgeladenen Daten erst einsehen, wenn Sie die Steuererklärung freigegeben haben.</span>
+        <span class="text">Lokale JSON-Dateien hochladen und in die Steuererklärung übertragen.</span>
         <input
           type="file"
           multiple
@@ -13,22 +29,58 @@
         <button>eSteuerauszug hochladen</button>
       </div>
 
+      <!-- ── Solid Pod Request ──────────────────────────────────────── -->
       <div class="container">
         <h2 class="title">Solid Steuerauszug</h2>
-        <span class="text">Steuerrelevante Daten werden in einem Solid Pod gespeichert und verbleiben unter der Kontrolle der steuerpflichtigen Person oder Organisation. Für die Übermittlung an die Steuerbehörde werden gezielt Zugriffsrechte vergeben, sodass nur die benötigten Informationen sicher und datenschutzkonform eingesehen oder abgerufen werden können. Nach Abschluss kann der Zugriff jederzeit angepasst oder entzogen werden.</span>
-        <button (click)="getFileFromSolidPod()">Get Data from solid pod</button>
+        <span class="text">
+          Steuerrelevante Daten werden in Ihrem Solid Pod gespeichert. Erteilen Sie der Steuerbehörde
+          gezielt Lesezugriff — nach der Deklaration kann der Zugriff jederzeit entzogen werden.
+        </span>
+
+        <button
+          (click)="getFileFromSolidPod()"
+          [disabled]="!isLoggedIn() || requestStatus() === 'pending' || requestStatus() === 'loading'"
+        >
+          Daten aus Solid Pod anfordern
+        </button>
+
+        @switch (requestStatus()) {
+          @case ('pending') {
+            <div class="status-row status-pending">
+              <div class="spinner-small"></div>
+              <span>Warte auf Freigabe im Behörden-Briefkasten&hellip;</span>
+            </div>
+          }
+          @case ('loading') {
+            <div class="status-row status-pending">
+              <div class="spinner-small"></div>
+              <span>Lade Daten aus dem Pod&hellip;</span>
+            </div>
+          }
+          @case ('denied') {
+            <div class="status-row status-denied">
+              <span>Zugriff wurde abgelehnt.</span>
+            </div>
+          }
+          @case ('error') {
+            <div class="status-row status-error">
+              <span>Fehler: {{ errorMessage }}</span>
+            </div>
+          }
+        }
       </div>
 
-      @if (jsonData()) {
+      <!-- ── Results Table ─────────────────────────────────────────── -->
+      @if (jsonData().length > 0) {
         <div class="container">
           <h1 class="title">Bankkonten</h1>
           <table class="account-table" border="1" cellpadding="8" cellspacing="0">
             <thead>
-            <tr>
-              <th>Konto Bezeichnung</th>
-              <th>IBAN</th>
-              <th>Stand</th>
-            </tr>
+              <tr>
+                <th>Konto Bezeichnung</th>
+                <th>IBAN</th>
+                <th>Stand</th>
+              </tr>
             </thead>
             <tbody>
               @for (file of jsonData(); track $index) {
@@ -39,15 +91,15 @@
                   <tr>
                     <td>{{ account.name }}</td>
                     <td>{{ account.iban }}</td>
-                    <td class="amount">CHF {{ account.amount | number : '1.2-2'  }}</td>
+                    <td class="amount">CHF {{ account.amount | number : '1.2-2' }}</td>
                   </tr>
                 }
               }
             </tbody>
           </table>
-
         </div>
       }
+
     </div>
   </div>
 </div>

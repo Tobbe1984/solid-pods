@@ -28,18 +28,14 @@ export class SolidPodExtensionService {
     });
   }
 
-  retrieveData(requestId: string, category: string): Observable<any> {
+  getApproval(requestId: string): Observable<any> {
     return new Observable((observer) => {
       // @ts-ignore
       chrome.runtime.sendMessage(
         environment.EXTENSION_ID,
-        {
-          type: 'DATA_RETRIEVE',
-          requestId,
-          category,
-        },
+        { type: 'GET_APPROVAL', requestId },
         (response: any) => {
-          observer.next(response);
+          observer.next(response ?? { pending: true });
           observer.complete();
         },
       );

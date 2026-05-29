@@ -1,9 +1,12 @@
-import { Component, signal, WritableSignal } from '@angular/core';
+import { Component, signal, WritableSignal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environment';
 import { getDefaultSession } from '@inrupt/solid-client-authn-browser';
+import { getSolidDataset, getContainedResourceUrlAll, getFile } from '@inrupt/solid-client';
 import { SolidPodExtensionService } from '../../services/solid-pod-extension.service';
-import { getFile } from '@inrupt/solid-client';
+import { firstValueFrom } from 'rxjs';
+
+type RequestStatus = 'idle' | 'pending' | 'loading' | 'loaded' | 'denied' | 'error';
 
 @Component({
   selector: 'app-taxme',
@@ -11,96 +14,143 @@ import { getFile } from '@inrupt/solid-client';
   templateUrl: './taxme.html',
   styleUrl: './taxme.scss',
 })
-export class Taxme {
-  jsonData: WritableSignal<any> = signal([]);
+export class Taxme implements OnInit {
+  jsonData: WritableSignal<any[]> = signal([]);
+  isLoggedIn = signal(false);
+  webId = signal('');
+  requestStatus: WritableSignal<RequestStatus> = signal('idle');
   errorMessage = '';
 
   constructor(private solidPodExtensionService: SolidPodExtensionService) {}
 
+  ngOnInit() {
+    const session = getDefaultSession();
+    this.syncSessionState(session);
+    session.events.on('login', () => this.syncSessionState(session));
+    session.events.on('logout', () => this.syncSessionState(session));
+    session.events.on('sessionRestore', () => this.syncSessionState(session));
+  }
+
+  private syncSessionState(session: ReturnType<typeof getDefaultSession>) {
+    this.isLoggedIn.set(session.info.isLoggedIn);
+    this.webId.set(session.info.webId ?? '');
+  }
+
+  login() {
+    getDefaultSession().login({
+      oidcIssuer: environment.SOLID_OIDC_ISSUER,
+      redirectUrl: window.location.href,
+      clientName: 'TaxMe',
+    });
+  }
+
+  logout() {
+    getDefaultSession().logout();
+    this.isLoggedIn.set(false);
+    this.webId.set('');
+    this.jsonData.set([]);
+    this.requestStatus.set('idle');
+  }
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-
-    if (!input.files || input.files.length === 0) {
-      return;
-    }
-
-    const files = Array.from(input.files);
-
-    this.readMultipleFiles(files);
+    if (!input.files || input.files.length === 0) return;
+    this.readMultipleFiles(Array.from(input.files));
   }
 
   private readMultipleFiles(files: File[]) {
     this.jsonData.set([]);
-
-    files.forEach((file) => {
-      this.readSingleFile(file);
-    });
-  }
-
-  getFileFromSolidPod() {
-    const requestId = `taxme-${Date.now()}`;
-    this.solidPodExtensionService
-      .requestData('Grant access to tax data', 'TAXME', requestId, environment.SOLID_CLIENT_ID || undefined)
-      .subscribe((response) => {
-        console.log('Access request response:', response);
-        const authFetch = (url: string, options :any = {}) => {
-          return fetch(url, {
-            ...options,
-            headers: {
-              ...options.headers,
-              Authorization: `Bearer ${response.session.accessToken}`,
-            },
-          });
-        };
-        setTimeout(() => {
-            this.loadAccountsFromSolid(authFetch, response.files)
-        },
-          2000)
-      });
+    files.forEach(f => this.readSingleFile(f));
   }
 
   private readSingleFile(file: File) {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const text = reader.result as string;
-        this.jsonData.set([...this.jsonData(), JSON.parse(text)]);
+        this.jsonData.set([...this.jsonData(), JSON.parse(reader.result as string)]);
         this.errorMessage = '';
-      } catch (error) {
-        this.errorMessage = 'Invalid JSON format.';
-        this.jsonData.set(null);
+      } catch {
+        this.errorMessage = 'Ungültiges JSON-Format.';
+        this.jsonData.set([]);
       }
     };
     reader.readAsText(file);
   }
 
-  loadAccountsFromSolid(fetch: any, urls: string[]) {
+  async getFileFromSolidPod() {
+    const session = getDefaultSession();
+    if (!session.info.isLoggedIn || !session.info.webId) {
+      this.errorMessage = 'Bitte zuerst mit dem Solid Pod einloggen.';
+      return;
+    }
+
+    const requestId = `taxme-${Date.now()}`;
+    this.requestStatus.set('pending');
+    this.errorMessage = '';
     this.jsonData.set([]);
-    urls.forEach((url) => this.loadFileFromSolid(url, fetch).then());
-  }
 
-  private async loadFileFromSolid(url: string, fetch: any) {
-    const file = await getFile(url, { fetch });
+    try {
+      await firstValueFrom(
+        this.solidPodExtensionService.requestData(
+          'Steuerauszüge (bekb, Postfinance)',
+          'bekb',
+          requestId,
+          session.info.webId,
+        ),
+      );
 
-    this.jsonData.set([...this.jsonData(), JSON.parse(await file.text())]);
-  }
+      const result = await this.pollForApproval(requestId);
 
-  login() {
-    if (!getDefaultSession().info.isLoggedIn) {
-      getDefaultSession().login({
-        oidcIssuer: environment.SOLID_OIDC_ISSUER,
-        redirectUrl: window.location.href,
-        clientName: 'Angular Solid Demo',
-      });
+      if (!result) {
+        this.requestStatus.set('error');
+        this.errorMessage = 'Timeout: Keine Antwort erhalten.';
+        return;
+      }
+
+      if (result.approved && result.containerUrl) {
+        await this.loadFilesFromContainer(result.containerUrl, session.fetch);
+      } else {
+        this.requestStatus.set('denied');
+      }
+    } catch (e: any) {
+      this.requestStatus.set('error');
+      this.errorMessage = e?.message ?? 'Unbekannter Fehler';
     }
   }
 
-  logout() {
-    getDefaultSession().logout();
+  private async pollForApproval(
+    requestId: string,
+    intervalMs = 1500,
+    timeoutMs = 120_000,
+  ): Promise<any | null> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const result = await firstValueFrom(
+        this.solidPodExtensionService.getApproval(requestId),
+      );
+      if (result?.approved !== undefined) return result;
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+    return null;
+  }
+
+  private async loadFilesFromContainer(containerUrl: string, fetchFn: typeof fetch) {
+    this.requestStatus.set('loading');
+    const dataset = await getSolidDataset(containerUrl, { fetch: fetchFn });
+    const urls = getContainedResourceUrlAll(dataset).filter(u => u.endsWith('.json'));
+
+    const files = await Promise.all(
+      urls.map(async url => {
+        const file = await getFile(url, { fetch: fetchFn });
+        return JSON.parse(await file.text());
+      }),
+    );
+
+    this.jsonData.set(files);
+    this.requestStatus.set('loaded');
   }
 
   accounts(file: any): any[] {
-    // @ts-ignore
-    return file?.accounts;
+    return file?.accounts ?? [];
   }
 }
