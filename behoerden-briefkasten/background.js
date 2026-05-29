@@ -7,7 +7,7 @@
 // -----------------------------------------------------------------------------
 
 import { listFolder, podBaseFromWebId } from './pod.js';
-import { getSession } from './auth.js';
+import { getSession, login } from './auth.js';
 
 const SEEN_KEY            = 'seen_message_ids';
 const POLL_ALARM          = 'inbox-poll';
@@ -31,6 +31,30 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // ── Internal Messages (from popup) ────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
+  // Running login() in the Service Worker instead of the popup fixes the MV3
+  // focus-loss bug: Chrome closes the popup as soon as launchWebAuthFlow opens
+  // the auth window, destroying the popup's JS context. The SW is kept alive
+  // by the ongoing chrome.identity call and completes the full OIDC flow.
+  if (msg?.type === 'LOGIN') {
+    // Acknowledge immediately so the popup can update its UI before closing.
+    sendResponse({ status: 'started' });
+
+    login(msg.issuer)
+      .then(() => {
+        // Session is in chrome.storage.local — popup will find it on next open.
+        // Also broadcast completion in case the popup is still alive (desktop).
+        chrome.runtime.sendMessage({ type: 'LOGIN_COMPLETE' }).catch(() => {});
+        chrome.storage.local.remove('login_error');
+      })
+      .catch(e => {
+        chrome.storage.local.set({ login_error: e.message });
+        chrome.runtime.sendMessage({ type: 'LOGIN_ERROR', error: e.message }).catch(() => {});
+      });
+
+    return false; // already responded synchronously
+  }
+
   if (msg?.type === 'CHECK_NOW') {
     checkInbox()
       .then(n => sendResponse({ newCount: n }))
@@ -38,9 +62,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  // DEV SHORTCUT: also handle DATA_REQUEST internally so you can test
-  // directly from the extension popup's DevTools console without needing
-  // an external webpage. Remove or guard with a DEV flag in production.
+  // DEV SHORTCUT: handle DATA_REQUEST internally for testing from popup DevTools.
   if (msg?.type === 'DATA_REQUEST') {
     const requestId = msg.requestId || crypto.randomUUID();
     sendResponse({ status: 'opening', requestId });

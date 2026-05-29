@@ -1,5 +1,5 @@
 // popup.js
-import { login, logout, getSession } from "../auth.js";
+import { logout, getSession } from "../auth.js";
 import {
   listByCategory,
   listCategories,
@@ -30,16 +30,37 @@ async function render() {
   const session = await getSession();
   if (session) {
     await showInbox(session);
-  } else {
-    showLogin();
+    return;
   }
+
+  // Check if a previous login attempt left an error message
+  const store = await chrome.storage.local.get('login_error');
+  showLogin(store.login_error || null);
 }
 
-function showLogin() {
+function showLogin(errorMessage = null) {
   $("view-login").classList.remove("hidden");
   $("view-inbox").classList.add("hidden");
   setDisplayName("");
   $("pod-subtitle").textContent = "";
+
+  const btn = $("btn-connect");
+  btn.textContent = "Verbinden";
+  btn.disabled = false;
+
+  if (errorMessage) {
+    showToast("Login fehlgeschlagen: " + errorMessage, true);
+    chrome.storage.local.remove("login_error");
+  }
+}
+
+// Shows a "login in progress" hint — the popup will likely close when the
+// auth window opens; the user should reopen it after completing login.
+function showLoginPending() {
+  const btn = $("btn-connect");
+  btn.textContent = "Auth-Fenster offen…";
+  btn.disabled = true;
+  showToast("Login läuft — bitte im Auth-Fenster anmelden, dann Popup neu öffnen.", false);
 }
 
 async function showInbox(session) {
@@ -253,7 +274,7 @@ function showToast(message, isError) {
 // ── Event Listeners ───────────────────────────────────────────────────────────
 
 $("btn-connect").addEventListener("click", async () => {
-  const nameInput = $("input-name").value.trim();
+  const nameInput   = $("input-name").value.trim();
   const issuerInput = $("input-webid").value.trim();
 
   if (!issuerInput) {
@@ -261,21 +282,33 @@ $("btn-connect").addEventListener("click", async () => {
     return;
   }
 
-  const btn = $("btn-connect");
-  btn.textContent = "Verbinde…";
-  btn.disabled = true;
-
-  try {
-    await login(issuerInput);
-    if (nameInput)
-      await chrome.storage.local.set({ [DISPLAY_NAME_KEY]: nameInput });
-    await render();
-  } catch (e) {
-    alert("Login fehlgeschlagen: " + e.message);
-  } finally {
-    btn.textContent = "Verbinden";
-    btn.disabled = false;
+  // Persist optional display name before the popup potentially closes
+  if (nameInput) {
+    await chrome.storage.local.set({ [DISPLAY_NAME_KEY]: nameInput });
   }
+
+  // Delegate the full OIDC flow to the Service Worker.
+  // Reason: Chrome closes the popup when launchWebAuthFlow opens the auth
+  // window (focus loss). The SW is kept alive by the chrome.identity API call
+  // and completes the token exchange even after the popup is gone.
+  chrome.runtime.sendMessage({ type: 'LOGIN', issuer: issuerInput }, () => {
+    // SW acknowledged — auth window will open shortly.
+    // Show hint; popup will likely close when auth window gets focus.
+    showLoginPending();
+  });
+
+  // If the popup somehow stays open (e.g. DevTools attached), listen for
+  // LOGIN_COMPLETE and re-render immediately without requiring a manual reopen.
+  chrome.runtime.onMessage.addListener(function onAuthDone(msg) {
+    if (msg?.type === 'LOGIN_COMPLETE') {
+      chrome.runtime.onMessage.removeListener(onAuthDone);
+      render();
+    }
+    if (msg?.type === 'LOGIN_ERROR') {
+      chrome.runtime.onMessage.removeListener(onAuthDone);
+      showLogin(msg.error);
+    }
+  });
 });
 
 $("input-name").addEventListener("input", (e) => {
