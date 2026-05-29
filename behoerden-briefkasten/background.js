@@ -66,8 +66,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === 'DATA_REQUEST') {
     const requestId = msg.requestId || crypto.randomUUID();
     sendResponse({ status: 'opening', requestId });
-    handleDataRequest(msg, sender, requestId).catch(console.error);
+    handleDataRequest(msg, sender, requestId, 'permission/permission.html').catch(console.error);
     return false;
+  }
+
+  if (msg?.type === 'GET_APPROVAL') {
+    handleGetApproval(msg.requestId, sendResponse);
+    return true;
   }
 });
 
@@ -85,37 +90,45 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // The extension opens a permission dialog; the result is stored under
 // APPROVAL_KEY in chrome.storage.local for the website to poll.
 
-chrome.runtime.onMessageExternal.addListener(async (msg, sender, sendResponse) => {
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (msg?.type === 'DATA_REQUEST') {
     // Respond synchronously — MV3 Service Workers go to sleep before an async
     // response can be sent, causing "message port closed" errors.
     const requestId = msg.requestId || crypto.randomUUID();
-    const session = await getSession();
-    sendResponse({status: 'opening', requestId, session, files: [
-        'http://localhost:3000/timfrey/bekb.json',
-        'http://localhost:3000/timfrey/postfinance.json',
-      ]});
+    sendResponse({ status: 'opening', requestId });
 
     // Fire-and-forget: async work happens after the port is already closed
     handleDataRequest(msg, sender, requestId, 'permission/permission.html').catch(console.error);
 
     return false; // port already closed intentionally
   }
-  else if (msg?.type === 'DATA_RETRIEVE') {
 
+  if (msg?.type === 'DATA_RETRIEVE') {
     const requestId = msg.requestId || crypto.randomUUID();
-    const session = await getSession();
-    sendResponse({status: 'opening', requestId, session, files: [
-        'http://localhost:3000/timfrey/bekb.json',
-        'http://localhost:3000/timfrey/postfinance.json',
-      ]});
+    sendResponse({ status: 'opening', requestId });
 
     // Fire-and-forget: async work happens after the port is already closed
     handleDataRequest(msg, sender, requestId, 'write/permission.html').catch(console.error);
 
     return false; // port already closed intentionally
   }
+
+  if (msg?.type === 'GET_APPROVAL') {
+    handleGetApproval(msg.requestId, sendResponse);
+    return true;
+  }
 });
+
+function handleGetApproval(requestId, sendResponse) {
+  chrome.storage.local.get('approval_result').then(store => {
+    const result = store['approval_result'];
+    if (result && result.requestId === requestId) {
+      sendResponse(result);
+    } else {
+      sendResponse({ pending: true });
+    }
+  });
+}
 
 async function handleDataRequest(msg, sender, requestId, url) {
   const { description, category } = msg;

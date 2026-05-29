@@ -8,7 +8,7 @@
 // before this window is opened.
 
 import { getSession } from '../auth.js';
-import { listByCategory, listFolder, podBaseFromWebId } from '../pod.js';
+import { listByCategory, listFolder, podBaseFromWebId, grantAccess } from '../pod.js';
 
 const PENDING_REQUEST_KEY = 'pending_data_request';
 const APPROVAL_KEY        = 'approval_result';
@@ -109,12 +109,29 @@ async function searchPodFiles(session, request) {
 // ── Approval / Denial ─────────────────────────────────────────────────────────
 
 async function approve(request) {
+  $('btn-approve').disabled = true;
+  $('btn-deny').disabled    = true;
+  $('btn-approve').textContent = 'Wird freigegeben …';
+
+  let containerUrl;
+  try {
+    // Grant write access (and read so requester can also verify what was written)
+    containerUrl = await grantAccess({ ...request, accessMode: 'Read, Write' });
+  } catch (e) {
+    $('btn-approve').disabled = false;
+    $('btn-deny').disabled    = false;
+    $('btn-approve').textContent = 'Schreiben zulassen';
+    console.error('Freigabe fehlgeschlagen:', e);
+    return;
+  }
+
   const result = {
-    requestId: request.id,
-    domain:    request.domain,
-    category:  request.category,
-    approved:  true,
-    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+    requestId:    request.id,
+    domain:       request.domain,
+    category:     request.category,
+    approved:     true,
+    containerUrl: containerUrl,
+    expiresAt:    Date.now() + 7 * 24 * 60 * 60 * 1000
   };
   await chrome.storage.local.set({ [APPROVAL_KEY]: result });
   await chrome.storage.local.remove(PENDING_REQUEST_KEY);

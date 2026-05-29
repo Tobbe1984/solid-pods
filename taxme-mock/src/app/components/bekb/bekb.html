@@ -1,6 +1,22 @@
 <div class="background">
   <div class="content-box">
-    <button class="button" (click)="login()">Mit Solid Pod einloggen</button>
-    <button class="button" (click)="writeFiles()">Kontodaten in Pod schreiben</button>
+    @if (!sessionWebId()) {
+      <button class="button" (click)="login()">Mit Solid Pod einloggen</button>
+    } @else {
+      <button
+        class="button"
+        (click)="grantAccessToSolidPod()"
+        [disabled]="writeStatus() === 'pending' || writeStatus() === 'writing'"
+      >
+        @switch (writeStatus()) {
+          @case ('pending') { Warte auf Freigabe… }
+          @case ('writing') { Daten werden geschrieben… }
+          @case ('done')    { Kontodaten geschrieben ✓ }
+          @case ('denied')  { Zugriff abgelehnt }
+          @case ('error')   { Fehler beim Schreiben }
+          @default          { Kontodaten in Pod schreiben }
+        }
+      </button>
+    }
   </div>
 </div>

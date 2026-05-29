@@ -28,6 +28,20 @@ export class SolidPodExtensionService {
     });
   }
 
+  retrieveData(description: string, category: string, requestId: string, requesterWebId?: string): Observable<any> {
+    return new Observable((observer) => {
+      // @ts-ignore
+      chrome.runtime.sendMessage(
+        environment.EXTENSION_ID,
+        { type: 'DATA_RETRIEVE', description, category, requestId, requesterWebId: requesterWebId ?? null },
+        (response: any) => {
+          observer.next(response ?? { error: 'no response' });
+          observer.complete();
+        },
+      );
+    });
+  }
+
   getApproval(requestId: string): Observable<any> {
     return new Observable((observer) => {
       // @ts-ignore
