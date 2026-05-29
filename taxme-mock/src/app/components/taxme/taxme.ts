@@ -1,6 +1,8 @@
 import {Component, signal, WritableSignal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {environment} from '../../../../environment';
+import {getDefaultSession} from '@inrupt/solid-client-authn-browser';
+import {getFile} from '@inrupt/solid-client';
 
 @Component({
   selector: 'app-taxme',
@@ -60,6 +62,44 @@ export class Taxme {
       },
       (response: any) => console.log(response)
     );
+    this.login();
+    this.loadAccountsFromSolid();
+  }
+
+  loadAccountsFromSolid() {
+    this.jsonData.set([])
+    const urls = ["http://localhost:3000/bekb/bekb.json", "http://localhost:3000/bekb/postfinance.json"]
+    urls.forEach(url => this.loadFileFromSolid(url).then());
+  }
+
+  private async loadFileFromSolid(url: string) {
+    const session = getDefaultSession();
+    if (!session.info.isLoggedIn || !session.info.webId) return;
+
+    const file = await getFile(
+      url,
+      {fetch: session.fetch}
+    );
+
+    this.jsonData.set([...this.jsonData(), JSON.parse(await file.text())])
+  }
+
+  login() {
+    if (!getDefaultSession().info.isLoggedIn){
+      getDefaultSession().login({
+        oidcIssuer: environment.SOLID_OIDC_ISSUER,
+        redirectUrl: window.location.href,
+        clientName: "Angular Solid Demo"
+      });
+    }
+  }
+
+  logout() {
+    getDefaultSession().logout();
+  }
+
+  get session() {
+    return getDefaultSession();
   }
 
   accounts(file: any): any[] {
