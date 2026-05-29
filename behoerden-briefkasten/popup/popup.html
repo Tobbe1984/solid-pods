@@ -14,28 +14,14 @@
   <header class="app-header">
     <div class="header-content">
 
-      <!-- Logo: hexagon with person + lock icon -->
+      <!-- Logo -->
       <div class="logo">
-        <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Hexagon background -->
-          <path d="M25 2 L46 13.75 L46 36.25 L25 48 L4 36.25 L4 13.75 Z" fill="#1B3A8A"/>
-          <!-- Head -->
-          <circle cx="25" cy="17" r="5.5" fill="white"/>
-          <!-- Shoulders -->
-          <path d="M13 37 Q13 27 25 27 Q37 27 37 37" fill="white"/>
-          <!-- Lock body -->
-          <rect x="21.5" y="29" width="7" height="6" rx="1.5" fill="#1B3A8A"/>
-          <!-- Lock shackle -->
-          <path d="M22.5 29 L22.5 27 Q22.5 24 25 24 Q27.5 24 27.5 27 L27.5 29"
-                stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          <!-- Keyhole dot -->
-          <circle cx="25" cy="32" r="1.2" fill="white"/>
-        </svg>
+        <img src="../Icon.png" alt="Behörden-Briefkasten">
       </div>
 
       <!-- Greeting + pod info -->
       <div class="header-text">
-        <h1>Hallo, <strong id="display-name">–</strong></h1>
+        <h1>Hallo<span id="display-name-greeting"></span></h1>
         <p class="subtitle" id="pod-subtitle"></p>
       </div>
 
@@ -45,7 +31,7 @@
   <!-- Wave divider -->
   <div class="wave-divider">
     <svg viewBox="0 0 400 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,0 L400,0 L400,8 Q320,36 200,28 Q80,20 0,36 Z" fill="#F2F5F8"/>
+      <path d="M0,36 L400,36 L400,28 Q320,0 200,8 Q80,16 0,0 Z" fill="#F2F5F8"/>
     </svg>
   </div>
 

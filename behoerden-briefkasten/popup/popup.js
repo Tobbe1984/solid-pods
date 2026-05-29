@@ -8,6 +8,11 @@ const DISPLAY_NAME_KEY = 'display_name';
 
 const $ = (id) => document.getElementById(id);
 
+function setDisplayName(name) {
+  const el = $('display-name-greeting');
+  el.innerHTML = name ? `, <strong>${name}</strong>` : '';
+}
+
 // ── View Router ───────────────────────────────────────────────────────────────
 
 async function render() {
@@ -22,7 +27,7 @@ async function render() {
 function showLogin() {
   $('view-login').classList.remove('hidden');
   $('view-inbox').classList.add('hidden');
-  $('display-name').textContent = '–';
+  setDisplayName('');
   $('pod-subtitle').textContent = '';
 }
 
@@ -36,7 +41,7 @@ async function showInbox(session) {
     || deriveNameFromWebId(session.webId)
     || 'Nutzer';
 
-  $('display-name').textContent = name;
+  setDisplayName(name);
 
   // Pod subtitle
   try {
@@ -163,7 +168,7 @@ $('btn-connect').addEventListener('click', async () => {
 // Live header name preview while typing
 $('input-name').addEventListener('input', (e) => {
   const val = e.target.value.trim();
-  $('display-name').textContent = val || '–';
+  setDisplayName(val);
 });
 
 $('btn-logout').addEventListener('click', async () => {
