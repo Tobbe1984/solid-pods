@@ -126,7 +126,7 @@ export async function listInbox() {
 }
 
 /**
- * Lists all files inside a named category folder (e.g. 'finance', 'health').
+ * Lists all files inside a named category folder (e.g. 'bekb', 'taxme').
  */
 export async function listByCategory(category) {
   const session = await getSession();
@@ -228,4 +228,69 @@ function buildAclTurtle(ownerWebId, grants) {
   });
 
   return lines.join('\n');
+/**
+ * Lists files across multiple category folders in parallel and merges results.
+ * Folders that don't exist yet are silently skipped.
+ *
+ * @param {string[]} categories - e.g. ['bekb', 'taxme', 'inbox']
+ * @returns {Promise<Array>}    - merged + date-sorted array
+ */
+export async function listCategories(categories) {
+  const session = await getSession();
+  if (!session) throw new Error('Nicht eingeloggt');
+
+  const base = podBaseFromWebId(session.webId);
+  const results = await Promise.allSettled(
+    categories.map(cat => listFolder(`${base}/${cat}/`))
+  );
+
+  return results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap(r => r.value)
+    .sort((a, b) => (b.sentAt || b.filename || '').localeCompare(a.sentAt || a.filename || ''));
+}
+
+// ── Write Operations ──────────────────────────────────────────────────────────
+
+/**
+ * Ensures a container (folder) exists on the Pod.
+ * Creates it if it doesn't exist yet; a 412 / 409 / 200 are all treated as OK.
+ *
+ * @param {string} folderUrl - Must end with /
+ */
+export async function ensureFolder(folderUrl) {
+  const res = await podFetch(folderUrl, {
+    method:  'PUT',
+    headers: {
+      'Content-Type': 'text/turtle',
+      'Link':         '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"',
+    },
+    body: '',
+  });
+  // 201 = created, 200/204 = already exists — both are fine
+  if (!res.ok && res.status !== 409 && res.status !== 412) {
+    throw new Error(`Ordner konnte nicht erstellt werden: ${res.status}`);
+  }
+}
+
+/**
+ * Uploads a File object to the given Pod folder.
+ * Creates the folder first if it doesn't exist.
+ *
+ * @param {string} folderUrl - Target folder URL (must end with /)
+ * @param {File}   file      - Browser File object from an <input type="file">
+ * @returns {Promise<string>} - URL of the uploaded resource
+ */
+export async function uploadFile(folderUrl, file) {
+  await ensureFolder(folderUrl);
+
+  const fileUrl = folderUrl + encodeURIComponent(file.name);
+  const res = await podFetch(fileUrl, {
+    method:  'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body:    file,
+  });
+
+  if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`);
+  return fileUrl;
 }
