@@ -29,16 +29,6 @@ async function init() {
   const session = sessionStore;
   const request = requestStore[PENDING_REQUEST_KEY];
 
-  if (!session) {
-    showError('Du bist nicht eingeloggt. Bitte zuerst mit deinem Pod verbinden.');
-    return;
-  }
-
-  if (!request) {
-    showError('Keine ausstehende Anfrage gefunden.');
-    return;
-  }
-
   // Populate header
   const name = await resolveDisplayName(session);
   $('display-name').textContent = name;
@@ -47,9 +37,6 @@ async function init() {
     $('pod-subtitle').innerHTML = `Du bist verbunden mit<br><span>${host}</span>`;
   } catch (_) { /* skip */ }
 
-  // Show requesting view while we search
-  showRequesting(request);
-
   // Search the Pod
   const files = await searchPodFiles(session, request);
 
@@ -57,32 +44,14 @@ async function init() {
   showConfirm(request, files);
 }
 
-// ── Views ─────────────────────────────────────────────────────────────────────
-
-function showRequesting(request) {
-  hideAll();
-  $('view-requesting').classList.remove('hidden');
-  $('req-domain').textContent      = request.domain;
-  $('req-description').textContent = request.description || '';
-}
-
 function showConfirm(request, files) {
   hideAll();
   $('view-confirm').classList.remove('hidden');
-  $('conf-domain').textContent      = request.domain;
-  $('conf-description').textContent = request.description || '';
-  // $('found-count').textContent      = files.length;
   renderFileList(files);
 }
 
-function showError(message) {
-  hideAll();
-  $('view-error').classList.remove('hidden');
-  $('error-text').textContent = message;
-}
-
 function hideAll() {
-  ['view-requesting', 'view-confirm', 'view-error'].forEach(id => {
+  ['view-confirm'].forEach(id => {
     $(id).classList.add('hidden');
   });
 }
@@ -170,10 +139,8 @@ async function attachListeners() {
   const store   = await chrome.storage.local.get(PENDING_REQUEST_KEY);
   const request = store[PENDING_REQUEST_KEY];
 
-  $('btn-deny-loading').addEventListener('click', () => deny(request || {}));
   $('btn-deny').addEventListener('click',         () => deny(request || {}));
   $('btn-approve').addEventListener('click',      () => approve(request || {}));
-  $('btn-close-error').addEventListener('click',  () => window.close());
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────

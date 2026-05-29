@@ -97,13 +97,27 @@ chrome.runtime.onMessageExternal.addListener(async (msg, sender, sendResponse) =
       ]});
 
     // Fire-and-forget: async work happens after the port is already closed
-    handleDataRequest(msg, sender, requestId).catch(console.error);
+    handleDataRequest(msg, sender, requestId, 'permission/permission.html').catch(console.error);
+
+    return false; // port already closed intentionally
+  }
+  else if (msg?.type === 'DATA_RETRIEVE') {
+
+    const requestId = msg.requestId || crypto.randomUUID();
+    const session = await getSession();
+    sendResponse({status: 'opening', requestId, session, files: [
+        'http://localhost:3000/timfrey/bekb.json',
+        'http://localhost:3000/timfrey/postfinance.json',
+      ]});
+
+    // Fire-and-forget: async work happens after the port is already closed
+    handleDataRequest(msg, sender, requestId, 'write/permission.html').catch(console.error);
 
     return false; // port already closed intentionally
   }
 });
 
-async function handleDataRequest(msg, sender, requestId) {
+async function handleDataRequest(msg, sender, requestId, url) {
   const { description, category } = msg;
 
   // sender.origin can be null/undefined when triggered from DevTools console
@@ -127,7 +141,7 @@ async function handleDataRequest(msg, sender, requestId) {
   await chrome.storage.local.set({ [PENDING_REQUEST_KEY]: request });
 
   chrome.windows.create({
-    url:     chrome.runtime.getURL('permission/permission.html'),
+    url:     chrome.runtime.getURL(url),
     type:    'popup',
     width:   420,
     height:  700,

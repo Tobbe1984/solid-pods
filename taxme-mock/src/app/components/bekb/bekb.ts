@@ -21,7 +21,7 @@ export class Bekb {
   protected grantAccessToSolidPod() {
     const requestId = `bekb-${Date.now()}`;
     this.solidPodExtensionService
-      .requestData('Grant access to BEKB data', 'BEKB', requestId)
+      .retrieveData('Grant access to BEKB data', 'BEKB')
       .subscribe(async (response) => {
         console.log('Access request response:', response);
         const authFetch = (url: string, options :any = {}) => {
