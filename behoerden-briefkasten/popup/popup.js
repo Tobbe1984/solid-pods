@@ -24,11 +24,6 @@ function setDisplayName(name) {
   el.innerHTML = name ? `, <strong>${name}</strong>` : "";
 }
 
-function setDisplayName(name) {
-  const el = $("display-name-greeting");
-  el.innerHTML = name ? `, <strong>${name}</strong>` : "";
-}
-
 // ── Initialise ────────────────────────────────────────────────────────────────
 
 async function render() {
