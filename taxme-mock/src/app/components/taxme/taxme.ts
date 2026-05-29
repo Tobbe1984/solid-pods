@@ -1,8 +1,9 @@
-import {Component, signal, WritableSignal} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {environment} from '../../../../environment';
-import {getDefaultSession} from '@inrupt/solid-client-authn-browser';
-import {getFile} from '@inrupt/solid-client';
+import { Component, signal, WritableSignal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { environment } from '../../../../environment';
+import { getDefaultSession } from '@inrupt/solid-client-authn-browser';
+import { SolidPodExtensionService } from '../../services/solid-pod-extension.service';
+import { getFile } from '@inrupt/solid-client';
 
 @Component({
   selector: 'app-taxme',
@@ -11,9 +12,10 @@ import {getFile} from '@inrupt/solid-client';
   styleUrl: './taxme.scss',
 })
 export class Taxme {
-
   jsonData: WritableSignal<any> = signal([]);
   errorMessage = '';
+
+  constructor(private solidPodExtensionService: SolidPodExtensionService) {}
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -30,10 +32,18 @@ export class Taxme {
   private readMultipleFiles(files: File[]) {
     this.jsonData.set([]);
 
-    files.forEach(file => {
+    files.forEach((file) => {
       this.readSingleFile(file);
     });
+  }
 
+  getFileFromSolidPod() {
+    const requestId = `taxme-${Date.now()}`;
+    this.solidPodExtensionService
+      .requestData('Grant access to tax data', 'TAXME', requestId)
+      .subscribe((response) => {
+        console.log('Access request response:', response);
+      });
   }
 
   private readSingleFile(file: File) {
@@ -51,45 +61,30 @@ export class Taxme {
     reader.readAsText(file);
   }
 
-  getFileFromSolidPod() {
-    // @ts-ignore
-    chrome.runtime.sendMessage(environment.EXTENSION_ID,
-      {
-        type:        'DATA_REQUEST',
-        description: 'Kontoauszüge des Jahres 2025 für Zwick, David',
-        category:    'finance',
-        requestId:   'test-001'
-      },
-      (response: any) => console.log(response)
-    );
-    this.login();
-    this.loadAccountsFromSolid();
-  }
-
   loadAccountsFromSolid() {
-    this.jsonData.set([])
-    const urls = ["http://localhost:3000/bekb/bekb.json", "http://localhost:3000/bekb/postfinance.json"]
-    urls.forEach(url => this.loadFileFromSolid(url).then());
+    this.jsonData.set([]);
+    const urls = [
+      'http://localhost:3000/bekb/bekb.json',
+      'http://localhost:3000/bekb/postfinance.json',
+    ];
+    urls.forEach((url) => this.loadFileFromSolid(url).then());
   }
 
   private async loadFileFromSolid(url: string) {
     const session = getDefaultSession();
     if (!session.info.isLoggedIn || !session.info.webId) return;
 
-    const file = await getFile(
-      url,
-      {fetch: session.fetch}
-    );
+    const file = await getFile(url, { fetch: session.fetch });
 
-    this.jsonData.set([...this.jsonData(), JSON.parse(await file.text())])
+    this.jsonData.set([...this.jsonData(), JSON.parse(await file.text())]);
   }
 
   login() {
-    if (!getDefaultSession().info.isLoggedIn){
+    if (!getDefaultSession().info.isLoggedIn) {
       getDefaultSession().login({
         oidcIssuer: environment.SOLID_OIDC_ISSUER,
         redirectUrl: window.location.href,
-        clientName: "Angular Solid Demo"
+        clientName: 'Angular Solid Demo',
       });
     }
   }
@@ -98,14 +93,8 @@ export class Taxme {
     getDefaultSession().logout();
   }
 
-  get session() {
-    return getDefaultSession();
-  }
-
   accounts(file: any): any[] {
     // @ts-ignore
-    return file?.accounts
+    return file?.accounts;
   }
-
-
 }

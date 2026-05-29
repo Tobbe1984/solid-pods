@@ -509,3 +509,130 @@ body {
   text-align: center;
   padding: 4px 0;
 }
+
+/* ── Filter Bar ────────────────────────────────────────────── */
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filter-label strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.filter-toggle {
+  display: flex;
+  background: #E2ECF0;
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.filter-toggle button {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font);
+  padding: 4px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.filter-toggle button.active {
+  background: var(--white);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ── Upload Bar ────────────────────────────────────────────── */
+
+.upload-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.upload-target-label {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upload-target-label span {
+  font-weight: 600;
+  color: var(--teal-dark);
+}
+
+.btn-upload {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: 1px solid var(--card-border);
+  padding: 7px 13px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-upload:hover { background: var(--card-border); }
+
+.btn-upload.uploading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* hidden native file input */
+#file-input { display: none; }
+
+/* ── Upload Toast ──────────────────────────────────────────── */
+
+.upload-toast {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 100;
+  display: none;
+  animation: slideUp 0.2s ease;
+}
+
+.upload-toast.ok  { background: var(--card-bg); color: var(--teal-dark); border: 1px solid var(--card-border); }
+.upload-toast.err { background: #fff0f0; color: var(--red); border: 1px solid #f4a4a4; }
+
+@keyframes slideUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}

@@ -1,97 +1,116 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Behörden-Briefkasten</title>
-  <link rel="stylesheet" href="../shared/theme.css">
-</head>
-<body>
-
-  <!-- ══════════════════════════════════════════════════════════
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Behörden-Briefkasten</title>
+    <link rel="stylesheet" href="../shared/theme.css" />
+  </head>
+  <body>
+    <!-- ══════════════════════════════════════════════════════════
        HEADER — always visible
   ══════════════════════════════════════════════════════════════ -->
-  <header class="app-header">
-    <div class="header-content">
+    <header class="app-header">
+      <div class="header-content">
+        <!-- Logo -->
+        <div class="logo">
+          <img src="../Icon.png" alt="Behörden-Briefkasten" />
+        </div>
 
-      <!-- Logo -->
-      <div class="logo">
-        <img src="../Icon.png" alt="Behörden-Briefkasten">
+        <div class="header-text">
+          <h1>Hallo<span id="display-name-greeting"></span></h1>
+          <p class="subtitle" id="pod-subtitle"></p>
+        </div>
       </div>
+    </header>
 
-      <!-- Greeting + pod info -->
-      <div class="header-text">
-        <h1>Hallo<span id="display-name-greeting"></span></h1>
-        <p class="subtitle" id="pod-subtitle"></p>
-      </div>
-
+    <div class="wave-divider">
+      <svg
+        viewBox="0 0 400 36"
+        preserveAspectRatio="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M0,36 L400,36 L400,28 Q320,0 200,8 Q80,16 0,0 Z"
+          fill="#F2F5F8"
+        />
+      </svg>
     </div>
-  </header>
 
-  <!-- Wave divider -->
-  <div class="wave-divider">
-    <svg viewBox="0 0 400 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,36 L400,36 L400,28 Q320,0 200,8 Q80,16 0,0 Z" fill="#F2F5F8"/>
-    </svg>
-  </div>
-
-
-  <!-- ══════════════════════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════
        VIEW: LOGIN
   ══════════════════════════════════════════════════════════════ -->
-  <div id="view-login" class="app-body">
-    <div class="card">
-      <h2 class="card-title">Mit Pod Verbinden</h2>
+    <div id="view-login" class="app-body">
+      <div class="card">
+        <h2 class="card-title">Mit Pod Verbinden</h2>
 
-      <div class="form-group">
-        <input
-          class="input-field"
-          id="input-name"
-          type="text"
-          placeholder="Name (optional)"
-          autocomplete="name"
-        >
-      </div>
+        <div class="form-group">
+          <input
+            class="input-field"
+            id="input-name"
+            type="text"
+            placeholder="Name (optional)"
+            autocomplete="name"
+          />
+        </div>
 
-      <div class="form-group">
-        <input
-          class="input-field"
-          id="input-webid"
-          type="url"
-          placeholder="Web ID  (z.B. http://localhost:3000)"
-          value="http://localhost:3000"
-          autocomplete="url"
-        >
-      </div>
+        <div class="form-group">
+          <input
+            class="input-field"
+            id="input-webid"
+            type="url"
+            placeholder="Web ID  (z.B. http://localhost:3000)"
+            value="http://localhost:3000"
+            autocomplete="url"
+          />
+        </div>
 
-      <div class="form-row-right">
-        <button class="btn-primary" id="btn-connect">Verbinden</button>
+        <div class="form-row-right">
+          <button class="btn-primary" id="btn-connect">Verbinden</button>
+        </div>
       </div>
     </div>
-  </div>
 
-
-  <!-- ══════════════════════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════
        VIEW: INBOX
   ══════════════════════════════════════════════════════════════ -->
-  <div id="view-inbox" class="app-body hidden">
+    <div id="view-inbox" class="app-body hidden">
+      <!-- Filter bar: shows current site context + toggle -->
+      <div class="filter-bar">
+        <span class="filter-label" id="filter-label">Alle Dateien</span>
+        <div class="filter-toggle">
+          <button id="btn-filter-site" class="active">Diese Seite</button>
+          <button id="btn-filter-all">Alle</button>
+        </div>
+      </div>
 
-    <div class="section-title">Letzte Aktivität in deinem Pod:</div>
+      <!-- Upload bar -->
+      <div class="upload-bar">
+        <span class="upload-target-label" id="upload-target-label"></span>
+        <button class="btn-upload" id="btn-upload">↑ Hochladen</button>
+        <input type="file" id="file-input" multiple />
+      </div>
 
-    <div id="activity-list"></div>
+      <!-- File list -->
+      <div id="activity-list"></div>
 
-    <div class="drop-zone" id="drop-zone">
-      <span>+ Daten hierhin ziehen um sie abzulegen</span>
+      <!-- Drop zone -->
+      <div class="drop-zone" id="drop-zone">
+        <span>+ Dateien hierhin ziehen um sie hochzuladen</span>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="btn-icon" id="btn-refresh" title="Aktualisieren">
+          ↻
+        </button>
+        <button class="btn-link" id="btn-logout">Logout</button>
+      </div>
     </div>
 
-    <div class="toolbar">
-      <button class="btn-icon" id="btn-refresh" title="Aktualisieren">↻</button>
-      <button class="btn-link" id="btn-logout">Logout</button>
-    </div>
+    <!-- Upload feedback toast -->
+    <div class="upload-toast" id="upload-toast"></div>
 
-  </div>
-
-
-  <script type="module" src="popup.js"></script>
-</body>
+    <script type="module" src="popup.js"></script>
+  </body>
 </html>
