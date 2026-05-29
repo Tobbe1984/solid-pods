@@ -1,5 +1,6 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
+import {handleIncomingRedirect} from '@inrupt/solid-client-authn-browser';
 
 @Component({
   selector: 'app-root',
@@ -9,6 +10,9 @@ import {RouterOutlet} from '@angular/router';
     RouterOutlet
   ],
 })
-export class App {
+export class App implements OnInit{
 
+  async ngOnInit() {
+    await handleIncomingRedirect();
+  }
 }
