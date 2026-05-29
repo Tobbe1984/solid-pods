@@ -8,7 +8,7 @@ import { environment } from '../../../environment';
 export class SolidPodExtensionService {
   constructor() {}
 
-  requestData(description: string, category: string, requestId: string): Observable<any> {
+  requestData(description: string, category: string, requestId: string, requesterWebId?: string): Observable<any> {
     return new Observable((observer) => {
       // @ts-ignore
       chrome.runtime.sendMessage(
@@ -18,6 +18,7 @@ export class SolidPodExtensionService {
           description,
           category,
           requestId,
+          requesterWebId: requesterWebId ?? null,
         },
         (response: any) => {
           observer.next(response);

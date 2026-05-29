@@ -1,53 +1,87 @@
-import { Component } from '@angular/core';
+import { Component, signal, WritableSignal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environment';
 import { getDefaultSession } from '@inrupt/solid-client-authn-browser';
 import { overwriteFile } from '@inrupt/solid-client';
 import { SolidPodExtensionService } from '../../services/solid-pod-extension.service';
+import { firstValueFrom } from 'rxjs';
 import bekb from '../../../../mockdata/bekb.json';
 import postfinance from '../../../../mockdata/postfinance.json';
-import {
-  buildAuthenticatedFetch,
-} from "@inrupt/solid-client-authn-core";
+
+type WriteStatus = 'idle' | 'pending' | 'writing' | 'done' | 'denied' | 'error';
 
 @Component({
   selector: 'app-bekb',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './bekb.html',
   styleUrl: './bekb.scss',
 })
 export class Bekb {
-  constructor(private solidPodExtensionService: SolidPodExtensionService) {}
+  writeStatus: WritableSignal<WriteStatus> = signal('idle');
+  sessionWebId: WritableSignal<string | null> = signal(null);
 
-  protected grantAccessToSolidPod() {
-    const requestId = `bekb-${Date.now()}`;
-    this.solidPodExtensionService
-      .retrieveData('Grant access to BEKB data', 'BEKB')
-      .subscribe(async (response) => {
-        console.log('Access request response:', response);
-        const authFetch = (url: string, options :any = {}) => {
-          return fetch(url, {
-            ...options,
-            headers: {
-              ...options.headers,
-              Authorization: `Bearer ${response.session.accessToken}`,
-            },
-          });
-        };
-        this.writeFiles(authFetch);
-      });
+  constructor(private solidPodExtensionService: SolidPodExtensionService) {
+    const session = getDefaultSession();
+    session.events.on('login', () => this.sessionWebId.set(session.info.webId ?? null));
+    session.events.on('logout', () => this.sessionWebId.set(null));
+    session.events.on('sessionRestore', () => this.sessionWebId.set(session.info.webId ?? null));
+    if (session.info.isLoggedIn) this.sessionWebId.set(session.info.webId ?? null);
   }
 
-  writeFiles(fetch: any) {
-    this.writeJson(bekb, 'http://localhost:3000/timfrey/bekb.json', fetch).then();
-    this.writeJson(postfinance, 'http://localhost:3000/timfrey/postfinance.json', fetch).then();
-  }
-
-  async writeJson(input: any, url: string, fetch: any) {
-    const json = { ...input, date: new Date() };
-    const blob = new Blob([JSON.stringify(json, null, 2)], {
-      type: 'application/json',
+  login() {
+    getDefaultSession().login({
+      oidcIssuer: environment.SOLID_OIDC_ISSUER,
+      redirectUrl: window.location.href,
+      clientName: 'BEKB',
     });
+  }
 
-    await overwriteFile(url, blob, { contentType: 'application/json', fetch });
+  async grantAccessToSolidPod() {
+    const session = getDefaultSession();
+    if (!session.info.isLoggedIn) {
+      this.login();
+      return;
+    }
+    const requestId = `bekb-${Date.now()}`;
+    this.writeStatus.set('pending');
+    try {
+      await firstValueFrom(
+        this.solidPodExtensionService.retrieveData(
+          'Kontodaten in Solid Pod ablegen', 'bekb', requestId, session.info.webId,
+        ),
+      );
+      const result = await this.pollForApproval(requestId);
+      if (result?.approved && result.containerUrl) {
+        this.writeStatus.set('writing');
+        await this.writeFiles(result.containerUrl, session.fetch);
+        this.writeStatus.set('done');
+      } else {
+        this.writeStatus.set('denied');
+      }
+    } catch (e: any) {
+      console.error('Write failed:', e);
+      this.writeStatus.set('error');
+    }
+  }
+
+  private async pollForApproval(requestId: string, timeoutMs = 120000): Promise<any> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const result = await firstValueFrom(this.solidPodExtensionService.getApproval(requestId));
+      if (!result?.pending) return result;
+      await new Promise<void>(r => setTimeout(r, 1500));
+    }
+    return null;
+  }
+
+  private async writeFiles(containerUrl: string, fetchFn: typeof fetch) {
+    await this.writeJson(bekb, `${containerUrl}bekb.json`, fetchFn);
+    await this.writeJson(postfinance, `${containerUrl}postfinance.json`, fetchFn);
+  }
+
+  async writeJson(input: any, url: string, fetchFn: typeof fetch) {
+    const json = { ...input, date: new Date() };
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    await overwriteFile(url, blob, { contentType: 'application/json', fetch: fetchFn });
   }
 }
