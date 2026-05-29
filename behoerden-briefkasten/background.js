@@ -152,7 +152,7 @@ function sendNotification(message) {
   const sender = (message.sender || 'Eine Behörde').replace(/^https?:\/\//, '');
   chrome.notifications.create(message.id, {
     type:     'basic',
-    iconUrl:  'icon128.png',
+    iconUrl:  'Icon.png',
     title:    'Neues Behörden-Dokument',
     message:  `Zustellung von ${sender}`,
     priority: 2

@@ -228,6 +228,8 @@ function buildAclTurtle(ownerWebId, grants) {
   });
 
   return lines.join('\n');
+}
+
 /**
  * Lists files across multiple category folders in parallel and merges results.
  * Folders that don't exist yet are silently skipped.
