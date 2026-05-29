@@ -85,12 +85,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // The extension opens a permission dialog; the result is stored under
 // APPROVAL_KEY in chrome.storage.local for the website to poll.
 
-chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessageExternal.addListener(async (msg, sender, sendResponse) => {
   if (msg?.type === 'DATA_REQUEST') {
     // Respond synchronously — MV3 Service Workers go to sleep before an async
     // response can be sent, causing "message port closed" errors.
     const requestId = msg.requestId || crypto.randomUUID();
-    sendResponse({ status: 'opening', requestId });
+    const session = await getSession();
+    sendResponse({status: 'opening', requestId, session, files: [
+        'http://localhost:3000/timfrey/bekb.json',
+        'http://localhost:3000/timfrey/postfinance.json',
+      ]});
 
     // Fire-and-forget: async work happens after the port is already closed
     handleDataRequest(msg, sender, requestId).catch(console.error);

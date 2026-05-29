@@ -43,6 +43,19 @@ export class Taxme {
       .requestData('Grant access to tax data', 'TAXME', requestId)
       .subscribe((response) => {
         console.log('Access request response:', response);
+        const authFetch = (url: string, options :any = {}) => {
+          return fetch(url, {
+            ...options,
+            headers: {
+              ...options.headers,
+              Authorization: `Bearer ${response.session.accessToken}`,
+            },
+          });
+        };
+        setTimeout(() => {
+            this.loadAccountsFromSolid(authFetch, response.files)
+        },
+          2000)
       });
   }
 
@@ -61,20 +74,13 @@ export class Taxme {
     reader.readAsText(file);
   }
 
-  loadAccountsFromSolid() {
+  loadAccountsFromSolid(fetch: any, urls: string[]) {
     this.jsonData.set([]);
-    const urls = [
-      'http://localhost:3000/bekb/bekb.json',
-      'http://localhost:3000/bekb/postfinance.json',
-    ];
-    urls.forEach((url) => this.loadFileFromSolid(url).then());
+    urls.forEach((url) => this.loadFileFromSolid(url, fetch).then());
   }
 
-  private async loadFileFromSolid(url: string) {
-    const session = getDefaultSession();
-    if (!session.info.isLoggedIn || !session.info.webId) return;
-
-    const file = await getFile(url, { fetch: session.fetch });
+  private async loadFileFromSolid(url: string, fetch: any) {
+    const file = await getFile(url, { fetch });
 
     this.jsonData.set([...this.jsonData(), JSON.parse(await file.text())]);
   }

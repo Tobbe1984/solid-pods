@@ -5,6 +5,9 @@ import { overwriteFile } from '@inrupt/solid-client';
 import { SolidPodExtensionService } from '../../services/solid-pod-extension.service';
 import bekb from '../../../../mockdata/bekb.json';
 import postfinance from '../../../../mockdata/postfinance.json';
+import {
+  buildAuthenticatedFetch,
+} from "@inrupt/solid-client-authn-core";
 
 @Component({
   selector: 'app-bekb',
@@ -19,34 +22,32 @@ export class Bekb {
     const requestId = `bekb-${Date.now()}`;
     this.solidPodExtensionService
       .requestData('Grant access to BEKB data', 'BEKB', requestId)
-      .subscribe((response) => {
+      .subscribe(async (response) => {
         console.log('Access request response:', response);
+        const authFetch = (url: string, options :any = {}) => {
+          return fetch(url, {
+            ...options,
+            headers: {
+              ...options.headers,
+              Authorization: `Bearer ${response.session.accessToken}`,
+            },
+          });
+        };
+        this.writeFiles(authFetch);
       });
   }
 
-  login() {
-    if (!getDefaultSession().info.isLoggedIn) {
-      getDefaultSession().login({
-        oidcIssuer: environment.SOLID_OIDC_ISSUER,
-        redirectUrl: window.location.href,
-        clientName: 'Angular Solid Demo',
-      });
-    }
+  writeFiles(fetch: any) {
+    this.writeJson(bekb, 'http://localhost:3000/timfrey/bekb.json', fetch).then();
+    this.writeJson(postfinance, 'http://localhost:3000/timfrey/postfinance.json', fetch).then();
   }
 
-  writeFiles() {
-    this.writeJson(bekb, 'http://localhost:3000/bekb/bekb.json').then();
-    this.writeJson(postfinance, 'http://localhost:3000/bekb/postfinance.json').then();
-  }
-
-  async writeJson(input: any, url: string) {
-    const session = getDefaultSession();
-
+  async writeJson(input: any, url: string, fetch: any) {
     const json = { ...input, date: new Date() };
     const blob = new Blob([JSON.stringify(json, null, 2)], {
       type: 'application/json',
     });
 
-    await overwriteFile(url, blob, { contentType: 'application/json', fetch: session.fetch });
+    await overwriteFile(url, blob, { contentType: 'application/json', fetch });
   }
 }
