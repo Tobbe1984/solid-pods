@@ -14,7 +14,7 @@ Almost every write operation requires a Bearer token. The easiest way to obtain 
 ### 1a. Create a Pod & Account (if not done yet)
 
 ```bash
-curl -X POST http://localhost:3000/.account/register \
+curl -X POST http://localhost:3000/.account/login/password/register/ \
   -H "Content-Type: application/json" \
   -d '{
     "createWebId": true,
